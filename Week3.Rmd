@@ -1,0 +1,143 @@
+---
+title: "Week 3_Exercise"
+output: pdf_document
+author: "Fenqi Guo"
+date: "2023-01-24"
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library("haven")
+library("car")
+library("ggplot2")
+library("dplyr")
+library(stargazer)
+
+data <- read_dta("Teaching_Dataset.dta")
+```
+
+# Question 1A  
+```{r, warning=FALSE}
+t.test(data$Teacher_Pay~data$Independent_School_Dummy)
+```
+ 
+
+# Question 1B
+```{r, warning=FALSE}
+#Preparing data
+data <- na.omit(data)
+data$Degree_Sub <- NA
+for (i in 1:nrow(data)){
+  if (data$Degree_Sub_1[i]==1){data$Degree_Sub[i]="Arts"}
+  if (data$Degree_Sub_2[i]==1){data$Degree_Sub[i]="Biology"}
+  if (data$Degree_Sub_3[i]==1){data$Degree_Sub[i]="Business"}
+  if (data$Degree_Sub_4[i]==1){data$Degree_Sub[i]="Combined"}
+  if (data$Degree_Sub_5[i]==1){data$Degree_Sub[i]="Economics"}
+  if (data$Degree_Sub_6[i]==1){data$Degree_Sub[i]="Education"}
+  if (data$Degree_Sub_7[i]==1){data$Degree_Sub[i]="Engineering"}
+  if (data$Degree_Sub_8[i]==1){data$Degree_Sub[i]="English"}
+  if (data$Degree_Sub_9[i]==1){data$Degree_Sub[i]="Geography"}
+  if (data$Degree_Sub_10[i]==1){data$Degree_Sub[i]="Law"}
+  if (data$Degree_Sub_11[i]==1){data$Degree_Sub[i]="Linguistics"}
+  if (data$Degree_Sub_12[i]==1){data$Degree_Sub[i]="Math"}
+  if (data$Degree_Sub_13[i]==1){data$Degree_Sub[i]="Medicine"}
+  if (data$Degree_Sub_14[i]==1){data$Degree_Sub[i]="Other"}
+  if (data$Degree_Sub_15[i]==1){data$Degree_Sub[i]="Physics"}
+  if (data$Degree_Sub_16[i]==1){data$Degree_Sub[i]="Politics"}
+  if (data$Degree_Sub_17[i]==1){data$Degree_Sub[i]="Psychology"}
+  if (data$Degree_Sub_18[i]==1){data$Degree_Sub[i]="Sociology"}
+}
+data <- data[, -9:-27]
+data$Degree_Class <- NA
+for (i in 1:nrow(data)){
+  if (data$Degree_Class_1[i]==1){data$Degree_Class[i]="Class 1"}
+  if (data$Degree_Class_2_1[i]==1){data$Degree_Class[i]="Class 2:1"}
+  if (data$Degree_Class_2_2[i]==1){data$Degree_Class[i]="Class 2:2"}
+  else {data$Degree_Class[i]="Other"}
+}
+data <- data[, -10:-13]
+data$School_Taught <- NA
+for (i in 1:nrow(data)){
+  if (data$Schools_taught_1[i]==1){data$School_Taught[i]="1"}
+  if (data$Schools_taught_2_3[i]==1){data$School_Taught[i]="2-3"}
+  if (data$Schools_taught_4_5[i]==1){data$School_Taught[i]="4-5"}
+  if (data$Schools_taught_6_7[i]==1){data$School_Taught[i]="6-7"}
+  if (data$Schools_taught_8_9[i]==1){data$School_Taught[i]="8-9"}
+  else {data$School_Taught[i]="10"}
+}
+data <- data[, -11:-16]
+#Regression model
+model1 <- lm(Teacher_Pay ~ Independent_School_Dummy + Age_Years + Male_Teacher +
+               Ethnic_White + Russell_Group + ofsted_Good_Dum + Subject_Cat_STEM +
+               Teach_Exp_dum_0_3 + Teach_Exp_dum_4_10 + PT +
+               as.factor(Degree_Sub), data)
+summary(model1)
+```
+
+
+# Question 2A  
+```{r, warning=FALSE}
+t.test(Pr_1~Ability_Own_Good, data)
+t.test(Pr_2~Ability_Own_Good, data)
+t.test(Pr_3~Ability_Own_Good, data)
+```
+
+
+# Question 2B
+[?]I didn't find a proper substitution for the STATA *foreach* function in R.
+```{r, warning=FALSE}
+res_list = list()
+res_list[[1]] <- t.test(Pr_1~Ability_Own_Good, data)
+res_list[[2]] <- t.test(Pr_2~Ability_Own_Good, data)
+res_list[[3]] <- t.test(Pr_3~Ability_Own_Good, data)
+dat1 = data.frame(id=c("Leaving intention 1 year",
+                      "Leaving intention 2 years",
+                      "Leaving intention 5 years"),
+                 estimate=sapply(res_list, 
+                                 function(x) x$estimate[1]-x$estimate[2]),
+                 conf_int_lower=sapply(res_list, function(x) x$conf.int[1]),
+                 conf_int_upper=sapply(res_list, function(x) x$conf.int[2]))
+ggplot(data=dat1, aes(x=estimate, y=id)) +
+    geom_vline(xintercept=0, color="red", linetype=2) +
+    geom_point(color="grey30") +
+    geom_errorbarh(aes(xmin=conf_int_lower, xmax=conf_int_upper), 
+                   color="grey30", height=0.4) +
+    ylab("Self rated as bad teacher")
+```
+
+# Question 3
+```{r, message=FALSE, warning=FALSE}
+coef_list <- list()
+A <- lm(Pr_3~Ability_Own_Good, data)
+coef_list[[1]] <- summary(A)
+#Teacher characteristics
+B <- update(A, . ~ . + Age_Years + Male_Teacher + Ethnic_White + 
+              Dep_Child_Dum + Partner_Earn_More + as.factor(School_Taught))
+coef_list[[2]] <- summary(B)
+#Teacher contract
+C <- update(B, . ~ . + Teacher_Pay + Teacher_Hours_Actual + PT)
+coef_list[[3]] <- summary(C)
+#Teacher education
+D <- update(C, . ~ . + as.factor(Degree_Sub) + as.factor(Degree_Class) +
+              Russell_Group)
+coef_list[[4]] <- summary(D)
+#School characteristics
+E <- update(D, . ~ . + Independent_School_Dummy + Early_Primary_Dum +
+              FSM_Eligible + Class_Size + ofsted_Good_Dum)
+coef_list[[5]] <- summary(E)
+#Model presentation
+stargazer(A, B, C, D, E, title="Results", type="text", align=TRUE,
+          dep.var.labels="Probability to leave in 5 years",
+          keep="Ability_Own_Good", omit.stat=c("ser","f"), no.space=TRUE)
+dat2 = data.frame(id=c("A", "B", "C", "D", "E"),
+                  estimate=sapply(coef_list, function(x) x$coefficients[2,1]),
+                  conf_int_lower=sapply(coef_list, 
+                  function(x) x$coefficients[2,1]-1.96*x$coefficients[2,2]),
+                  conf_int_upper=sapply(coef_list, 
+                  function(x) x$coefficients[2,1]+1.96*x$coefficients[2,2]))
+ggplot(data=dat2, aes(x=estimate, y=id)) +
+    geom_vline(xintercept=0, color="red", linetype=2) +
+    geom_point(color="grey30") +
+    geom_errorbarh(aes(xmin=conf_int_lower, xmax=conf_int_upper), 
+                   color="grey30", height=0.4) +
+    ylab("Estimated effect of teacher payment")
+```
