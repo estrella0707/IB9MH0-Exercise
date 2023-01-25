@@ -1,0 +1,94 @@
+---
+title: "Week 2_Exercise"
+output: pdf_document
+author: "Fenqi Guo"
+date: "2023-01-17"
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library("haven")
+library("car")
+library("ggplot2")
+
+data <- read_dta("Teaching_Dataset.dta")
+```
+
+# Question 1A
+```{r, warning=FALSE}
+summary(data$Pr_1)
+sd(data$Pr_1)
+summary(data$Pr_2)
+sd(data$Pr_2)
+summary(data$Pr_3)
+sd(data$Pr_3)
+#histogram:
+hist(data$Pr_1, freq = FALSE, breaks = 20, xlab = "Intention to leave in 1 year")
+hist(data$Pr_2, freq = FALSE, breaks = 20, xlab = "Intention to leave in 2 years")
+hist(data$Pr_3, freq = FALSE, breaks = 20, xlab = "Intention to leave in 5 years")
+```
+
+
+# Question 1B and 1C
+```{r, warning=FALSE}
+#scatter plot:
+plot(data$Pr_1, data$Pr_2)
+abline(coef = c(0,1), col = "red")
+plot(data$Pr_1, data$Pr_3)
+abline(coef = c(0,1), col = "red")
+#correlation:
+cor(data$Pr_1, data$Pr_2)
+cor(data$Pr_1, data$Pr_3)
+```
+
+
+# Question 2
+```{r, warning=FALSE}
+summary(data$Not_In_Teaching)
+sd(data$Not_In_Teaching)
+summary(data$Not_In_Teaching_2)
+sd(data$Not_In_Teaching_2)
+#correlation:
+cor(data$Pr_1, data$Not_In_Teaching)
+cor(data$Pr_2, data$Not_In_Teaching_2)
+```
+
+
+# Question 3A
+```{r, warning=FALSE}
+summary(data$Teacher_Pay)
+sd(data$Teacher_Pay)
+tapply(data$Teacher_Pay, data$PT, summary) 
+summary(data$Non_Teacher_Wage_Own)
+sd(data$Non_Teacher_Wage_Own)
+tapply(data$Non_Teacher_Wage_Own, data$PT, summary) 
+summary(data$Non_Teacher_Wage_Ave)
+sd(data$Non_Teacher_Wage_Ave)
+tapply(data$Non_Teacher_Wage_Ave, data$PT, summary) 
+```
+
+
+# Question 3B
+```{r, warning=FALSE}
+plot(data$Teacher_Pay, data$Non_Teacher_Wage_Own)
+abline(coef = c(0,1), col = "red")
+```
+
+
+# Question 3C
+```{r, warning=FALSE}
+cor(data$Non_Teacher_Wage_Own, data$Pr_1)
+cor(data$Non_Teacher_Wage_Own, data$Pr_2)
+cor(data$Non_Teacher_Wage_Own, data$Pr_3)
+```
+
+# Question 4
+```{r, warning=FALSE}
+#Are teachers who are secondary earners in their household more or less 
+#likely to leave? What does this say about the role of financial constrains?
+tapply(data$Not_In_Teaching, data$Partner_Earn_More, summary)
+t.test(data$Not_In_Teaching~data$Partner_Earn_More)
+#Do teachers earnings differ by school sector (Independent schools). Might 
+#this explain why pupil sectors schools struggle to recruit?
+tapply(data$Teacher_Pay, data$Independent_School_Dummy, summary)
+t.test(data$Teacher_Pay~data$Independent_School_Dummy)
+```
